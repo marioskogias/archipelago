@@ -8,26 +8,26 @@ monitor: monitor.c peer.c peer.h
 
 archip-sosd: mt-sosd.c hash.c hash.h peer.c peer.h
 	$(CC) $(CFLAGS) -o $@ $(CPREQS) $(INC) -L$(LIB) -lxseg -lrados -lpthread \
-							-lcrypto -DMT
+							-lcrypto -DMT -lblkin-front
 archip-dummy: dummy.c peer.c peer.h
-	$(CC) $(CFLAGS) -o $@ $< peer.c $(INC) -L$(LIB) -lxseg -lpthread -DMT
+	$(CC) $(CFLAGS) -o $@ $< peer.c $(INC) -L$(LIB) -lxseg -lpthread -DMT -lblkin-front
 
 BENCH_PREQ=bench-xseg.c peer.c bench-lfsr.c bench-timer.c bench-utils.c \
 	   bench-report.c bench-verify.c				\
 	   bench-xseg.h peer.h bench-lfsr.h $(BASE)/xseg/protocol.h
 
 archip-bench: $(BENCH_PREQ)
-	$(CC) $(CFLAGS) -o $@ $(CPREQS) $(INC) -L$(LIB) -lxseg -lpthread -lm
+	$(CC) $(CFLAGS) -o $@ $(CPREQS) $(INC) -L$(LIB) -lxseg -lpthread -lm -lblkin-front
 
 archip-benchfd: $(BENCH_PREQ)
-	$(CC) $(CFLAGS) -o $@ $(CPREQS) $(INC) -L$(LIB) -lxseg -lpthread -lm -DFD
+	$(CC) $(CFLAGS) -o $@ $(CPREQS) $(INC) -L$(LIB) -lxseg -lpthread -lm -DFD -lblkin-front
 
 archip-filed: filed.c peer.c peer.h hash.c hash.h $(BASE)/xseg/protocol.h
 	$(CC) $(CFLAGS) -o $@ $(CPREQS) $(INC) -L$(LIB) -lxseg -lpthread -DMT \
-							-lcrypto
+							-lcrypto -lblkin-front
 
 archip-vlmcd: mt-vlmcd.c peer.c peer.h $(BASE)/xseg/protocol.h
-	$(CC) $(CFLAGS) -o $@ $< peer.c $(INC) -L$(LIB) -lxseg
+	$(CC) $(CFLAGS) -o $@ $< peer.c $(INC) -L$(LIB) -lxseg -lblkin-front
 
 MAPPER_PREQ=mapper.c mapper.h peer.c peer.h hash.h hash.c mapper-handling.c \
 	    mapper-versions.h mapper-versions.c mapper-version0.h mapper-version0.c \
@@ -36,4 +36,4 @@ MAPPER_PREQ=mapper.c mapper.h peer.c peer.h hash.h hash.c mapper-handling.c \
 
 archip-mapperd: $(MAPPER_PREQ)
 	$(CC) $(CFLAGS) -o $@ $(CPREQS) $(INC) -L$(LIB) -DST_THREADS \
-							-lxseg -lst -lcrypto
+							-lxseg -lst -lcrypto -lblkin-front

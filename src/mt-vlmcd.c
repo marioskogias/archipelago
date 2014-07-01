@@ -903,12 +903,12 @@ int custom_peer_init(struct peerd *peer, int argc, char *argv[])
 
     const struct sched_param param = { .sched_priority = 99 };
     sched_setscheduler(syscall(SYS_gettid), SCHED_FIFO, &param);
-
+    
+    blkin_init();
     //Create peer endpoint                                                  
     peer->peer_endpoint = malloc(sizeof(struct blkin_endpoint));            
     blkin_init_endpoint(peer->peer_endpoint, "0.0.0.1", peer->portno_start, 
             "vlmc");                                                        
-    srand(getpid());
              
 	return 0;
 }

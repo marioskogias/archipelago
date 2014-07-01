@@ -1729,11 +1729,11 @@ int custom_peer_init(struct peerd *peer, int argc, char *argv[])
                 rlim.rlim_cur, pfiled->cache.size + peer->nr_ops - 4);
         return -1;
     }
+    blkin_init();
     //Create peer endpoint                                                  
     peer->peer_endpoint = malloc(sizeof(struct blkin_endpoint));            
     blkin_init_endpoint(peer->peer_endpoint, "0.0.0.1", peer->portno_start, 
             "filed");                                                       
-    srand(getpid());
 out:
 	return ret;
 }

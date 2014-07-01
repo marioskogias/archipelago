@@ -628,10 +628,10 @@ reseed:
 		XSEGLOG2(&lc, I, "Seed is %u, object name is %s",
 				obv->seed, obv->name);
     /* initialize endpoint */
+    blkin_init();
     peer->peer_endpoint = malloc(sizeof(struct blkin_endpoint));
     blkin_init_endpoint(peer->peer_endpoint, "0.0.0.0", peer->portno_start,
         "bench");
-    srand(getpid());
 	return 0;
 
 arg_fail:

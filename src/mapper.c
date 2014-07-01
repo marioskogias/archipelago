@@ -1595,10 +1595,10 @@ int custom_peer_init(struct peerd *peer, int argc, char *argv[])
 
 //	test_map(peer);
 //Create peer endpoint
+    blkin_init();
     peer->peer_endpoint = malloc(sizeof(struct blkin_endpoint));
     blkin_init_endpoint(peer->peer_endpoint, "0.0.0.1", peer->portno_start,
             "mapper");
-    srand(getpid());
 	return 0;
 }
 
