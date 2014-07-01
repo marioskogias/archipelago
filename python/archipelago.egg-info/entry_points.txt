@@ -1,0 +1,4 @@
+[console_scripts]
+archipelago = archipelago.cli:main
+vlmc = archipelago.cli:main
+

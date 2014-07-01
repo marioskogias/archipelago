@@ -39,6 +39,7 @@
 #include <stddef.h>
 #include <xseg/xseg.h>
 #include <blkin-front.h>
+#include <string.h>
 
 #ifdef ST_THREADS
 #include <st.h>

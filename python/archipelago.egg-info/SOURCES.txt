@@ -1,0 +1,7 @@
+../archipelago/python/archipelago/__init__.py
+../archipelago/python/archipelago/archipelago.py
+../archipelago/python/archipelago/blktap.py
+../archipelago/python/archipelago/cli.py
+../archipelago/python/archipelago/common.py
+../archipelago/python/archipelago/vlmc.py
+../archipelago/python/archipelago.egg-info/SOURCES.txt
