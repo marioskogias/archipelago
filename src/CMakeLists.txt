@@ -76,7 +76,7 @@ set_target_properties(archip-filed
 
 set(VLMCD_SRC mt-vlmcd.c peer.c)
 add_executable(archip-vlmcd ${VLMCD_SRC})
-target_link_libraries(archip-vlmcd xseg)
+target_link_libraries(archip-vlmcd xseg blkin-front )
 
 set(MAPPERD_SRC mapper.c peer.c hash.c mapper-handling.c 
 	mapper-version0.c mapper-version1.c mapper-version2.c)

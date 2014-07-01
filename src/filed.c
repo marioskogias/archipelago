@@ -1627,6 +1627,8 @@ int dispatch(struct peerd *peer, struct peer_req *pr, struct xseg_request *req,
 	}
     BLKIN_TIMESTAMP(pr->peer_trace,                          
             peer->peer_endpoint, "send");
+    BLKIN_TIMESTAMP(pr->peer_trace,                          
+            peer->peer_endpoint, "Span ended");
     return 0;
 }
 

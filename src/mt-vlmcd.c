@@ -278,7 +278,7 @@ static int do_accepted_pr(struct peerd *peer, struct peer_req *pr)
     pr->peer_trace = malloc(sizeof(struct blkin_trace));                    
     struct blkin_annotation annotation;                                     
     blkin_init_child_info(pr->peer_trace,                                   
-            (struct blkin_trace_info *) &pr->req->req_trace, "vlmc service");
+            (struct blkin_trace_info *) &pr->req->req_trace, peer->peer_endpoint, "vlmc service");
     BLKIN_TIMESTAMP(pr->peer_trace,                           
             peer->peer_endpoint, "accept");                                 
 	XSEGLOG2(&lc, I, "Do accepted pr started for pr %lx", pr);
@@ -383,7 +383,7 @@ static int do_accepted_pr(struct peerd *peer, struct peer_req *pr)
             peer->peer_endpoint, "send to mapper");                         
 
     /*Set trace info to request*/                                           
-    blkin_set_trace_info(pr->peer_trace,                                    
+    blkin_get_trace_info(pr->peer_trace,                                    
             (struct blkin_trace_info *) &vio->mreq->req_trace);
 
     p = xseg_submit(peer->xseg, vio->mreq, pr->portno, X_ALLOC);
@@ -737,7 +737,7 @@ static int mapping_readwrite(struct peerd *peer, struct peer_req *pr)
         /*
          * Set trace fields to request
          */
-        blkin_set_trace_info(pr->peer_trace, 
+        blkin_get_trace_info(pr->peer_trace, 
                 (struct blkin_trace_info *) &breq->req_trace);
 		breq->offset = offset;
 		breq->size = datalen;
@@ -799,8 +799,8 @@ static int handle_mapping(struct peerd *peer, struct peer_req *pr,
 				vio->state, (unsigned long)vio->breqs[0]);
 		return -1;
 	}
-    struct blkin_trace trace = {.name = "bench"};                           
-    blkin_get_trace_info(&trace,                                            
+    struct blkin_trace trace = {.name = "vlmc"};                           
+    blkin_set_trace_info(&trace,                                            
             (struct blkin_trace_info *) &req->req_trace);                   
     struct blkin_annotation annotation;                                         
     BLKIN_TIMESTAMP(&trace, peer->peer_endpoint,               
@@ -843,8 +843,8 @@ static int handle_serving(struct peerd *peer, struct peer_req *pr,
 	(void)vlmc;
 	struct xseg_request *breq = req;
     /*Receive trace info from xseg request and annotate*/                   
-    struct blkin_trace trace = {.name = "bench"};                           
-    blkin_get_trace_info(&trace,                                            
+    struct blkin_trace trace = {.name = "vlmc"};                           
+    blkin_set_trace_info(&trace,                                            
             (struct blkin_trace_info *) &req->req_trace);                   
     struct blkin_annotation annotation;                                         
     BLKIN_TIMESTAMP(&trace,  peer->peer_endpoint,               
@@ -858,6 +858,9 @@ static int handle_serving(struct peerd *peer, struct peer_req *pr,
 		//assert breq->serviced == breq->size
 		pr->req->serviced += breq->serviced;
 	}
+        BLKIN_TIMESTAMP(&trace,  peer->peer_endpoint,               
+	       "Span ended");
+	XSEGLOG2(&lc, E, "Span ended");
 	xseg_put_request(peer->xseg, breq, pr->portno);
 
 	if (!--vio->breq_cnt){

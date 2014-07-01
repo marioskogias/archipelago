@@ -1410,7 +1410,7 @@ void * handle_info(struct peer_req *pr)
             MF_ARCHIP|MF_LOAD);
     struct blkin_annotation annotation;                                     
     BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint,       
-            "mapper complete");
+            "Span ended");
     if (r < 0)
 		fail(peer, pr);
 	else
@@ -1521,7 +1521,7 @@ void * handle_clone(struct peer_req *pr)
 	}
 out:
     BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint,       
-            "mapper complete");
+            "Span ended");
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1680,7 +1680,7 @@ void * handle_mapr(struct peer_req *pr)
 				MF_ARCHIP|MF_LOAD|MF_EXCLUSIVE);
     struct blkin_annotation annotation;                                     
     BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint,       
-            "mapper complete");
+            "Span ended");
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1697,7 +1697,7 @@ void * handle_mapw(struct peer_req *pr)
 				MF_ARCHIP|MF_LOAD|MF_EXCLUSIVE|MF_FORCE);
     struct blkin_annotation annotation;                                     
     BLKIN_TIMESTAMP(pr->peer_trace,  peer->peer_endpoint,       
-            "mapper complete");
+            "Span ended");
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1718,7 +1718,7 @@ void * handle_destroy(struct peer_req *pr)
 				MF_ARCHIP|MF_LOAD|MF_EXCLUSIVE);
     struct blkin_annotation annotation;                                     
     BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint,       
-            "mapper complete");
+            "Span ended");
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1735,7 +1735,7 @@ void * handle_open(struct peer_req *pr)
 				MF_ARCHIP|MF_LOAD|MF_EXCLUSIVE);
     struct blkin_annotation annotation;                                     
     BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint,       
-            "mapper complete");
+            "Span ended");
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1753,7 +1753,7 @@ void * handle_close(struct peer_req *pr)
 				MF_ARCHIP|MF_EXCLUSIVE|MF_FORCE);
     struct blkin_annotation annotation;                                     
     BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint,       
-            "mapper complete");
+            "Span ended");
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1773,7 +1773,7 @@ void * handle_snapshot(struct peer_req *pr)
 				MF_ARCHIP|MF_LOAD|MF_EXCLUSIVE);
     struct blkin_annotation annotation;                                     
     BLKIN_TIMESTAMP(pr->peer_trace,  peer->peer_endpoint,       
-            "mapper complete");
+            "Span ended");
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1810,7 +1810,7 @@ void * handle_hash(struct peer_req *pr)
 				MF_ARCHIP|MF_LOAD);
     struct blkin_annotation annotation;                                     
     BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint,       
-            "mapper complete");
+            "Span ended");
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1829,7 +1829,7 @@ int dispatch_accepted(struct peerd *peer, struct peer_req *pr,
     pr->peer_trace = malloc(sizeof(struct blkin_trace));                    
     struct blkin_annotation annotation;                                     
     blkin_init_child_info(pr->peer_trace,                                   
-        (struct blkin_trace_info *) &req->req_trace, "mapper service"); 
+        (struct blkin_trace_info *) &req->req_trace, peer->peer_endpoint, "mapper service"); 
     BLKIN_TIMESTAMP(pr->peer_trace,                            
      peer->peer_endpoint, "accept");
 	

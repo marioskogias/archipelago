@@ -762,7 +762,7 @@ static int send_request(struct peerd *peer, struct bench *prefs)
     BLKIN_TIMESTAMP(&trace, peer->peer_endpoint, "send");
 
     // set trace info on request
-    blkin_set_trace_info(&trace, (struct blkin_trace_info *)&req->req_trace);
+    blkin_get_trace_info(&trace, (struct blkin_trace_info *)&req->req_trace);
 
     p = xseg_submit(xseg, req, srcport, X_ALLOC);
     if (p == NoPort) {
@@ -1014,10 +1014,11 @@ static void handle_received(struct peerd *peer, struct peer_req *pr)
      * Get trace_info from xseg_req and annotate
      */
     struct blkin_trace trace = {.name = "bench service"};
-    blkin_get_trace_info(&trace,
+    blkin_set_trace_info(&trace,
             (struct blkin_trace_info *) &pr->req->req_trace);
     struct blkin_annotation annotation;
     BLKIN_TIMESTAMP(&trace, peer->peer_endpoint, "receive");
+    BLKIN_TIMESTAMP(&trace, peer->peer_endpoint, "Span ended");
 out:
 	if (xseg_put_request(peer->xseg, pr->req, pr->portno))
 		XSEGLOG2(&lc, W, "Cannot put xseg request\n");
