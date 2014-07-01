@@ -166,7 +166,7 @@ def start(user=False, role=None, cli=False, **kwargs):
         get_segment().create()
         time.sleep(0.5)
         start_peers(peers, cli)
-        load_module("blktap", None)
+        #load_module("blktap", None)
     except Exception as e:
         if cli:
             print red(e)

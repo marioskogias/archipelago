@@ -48,7 +48,7 @@
 #include <bench-lfsr.h>
 #include <limits.h>
 #include <math.h>
-
+#include <string.h>
 /*
  * This macro checks two things:
  * a) If in-flight requests are less than given iodepth
@@ -759,7 +759,7 @@ static int send_request(struct peerd *peer, struct bench *prefs)
     struct blkin_trace trace;
     blkin_init_new_trace(&trace, "bench service", peer->peer_endpoint);
     struct blkin_annotation annotation;
-    BLKIN_TIMESTAMP(&trace, &annotation, NULL, "send");
+    BLKIN_TIMESTAMP(&trace, peer->peer_endpoint, "send");
 
     // set trace info on request
     blkin_set_trace_info(&trace, (struct blkin_trace_info *)&req->req_trace);
@@ -1017,7 +1017,7 @@ static void handle_received(struct peerd *peer, struct peer_req *pr)
     blkin_get_trace_info(&trace,
             (struct blkin_trace_info *) &pr->req->req_trace);
     struct blkin_annotation annotation;
-    BLKIN_TIMESTAMP(&trace, &annotation, peer->peer_endpoint, "receive");
+    BLKIN_TIMESTAMP(&trace, peer->peer_endpoint, "receive");
 out:
 	if (xseg_put_request(peer->xseg, pr->req, pr->portno))
 		XSEGLOG2(&lc, W, "Cannot put xseg request\n");

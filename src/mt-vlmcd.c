@@ -279,7 +279,7 @@ static int do_accepted_pr(struct peerd *peer, struct peer_req *pr)
     struct blkin_annotation annotation;                                     
     blkin_init_child_info(pr->peer_trace,                                   
             (struct blkin_trace_info *) &pr->req->req_trace, "vlmc service");
-    BLKIN_TIMESTAMP(pr->peer_trace, &annotation,                            
+    BLKIN_TIMESTAMP(pr->peer_trace,                           
             peer->peer_endpoint, "accept");                                 
 	XSEGLOG2(&lc, I, "Do accepted pr started for pr %lx", pr);
 	target = xseg_get_target(peer->xseg, pr->req);
@@ -375,7 +375,7 @@ static int do_accepted_pr(struct peerd *peer, struct peer_req *pr)
 	__set_vio_state(vio, MAPPING);
 
     /*Annotate communication with mapper*/                                  
-    BLKIN_TIMESTAMP(pr->peer_trace, &annotation,                            
+    BLKIN_TIMESTAMP(pr->peer_trace,                            
             peer->peer_endpoint, "send to mapper");                         
 
     /*Set trace info to request*/                                           
@@ -664,7 +664,7 @@ static int mapping_readwrite(struct peerd *peer, struct peer_req *pr)
     pos = 0;
 	__set_vio_state(vio, SERVING);
 	for (i = 0; i < vio->breq_len; i++) {
-        BLKIN_TIMESTAMP(pr->peer_trace, &annotation, peer->peer_endpoint,
+        BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint,
                 "send to blocker");
         datalen = mreply->segs[i].size;
         offset = mreply->segs[i].offset;
@@ -748,7 +748,7 @@ static int handle_mapping(struct peerd *peer, struct peer_req *pr,
     blkin_get_trace_info(&trace,                                            
             (struct blkin_trace_info *) &req->req_trace);                   
     struct blkin_annotation annotation;                                         
-    BLKIN_TIMESTAMP(&trace, &annotation, peer->peer_endpoint,               
+    BLKIN_TIMESTAMP(&trace, peer->peer_endpoint,               
             "receive from mapper");
 	switch (vio->mreq->op){
 		case X_INFO:
@@ -789,7 +789,7 @@ static int handle_serving(struct peerd *peer, struct peer_req *pr,
     blkin_get_trace_info(&trace,                                            
             (struct blkin_trace_info *) &req->req_trace);                   
     struct blkin_annotation annotation;                                         
-    BLKIN_TIMESTAMP(&trace, &annotation, peer->peer_endpoint,               
+    BLKIN_TIMESTAMP(&trace,  peer->peer_endpoint,               
             "receive from blocker");
 	if (breq->state & XS_FAILED && !(breq->state & XS_SERVED)) {
 		XSEGLOG2(&lc, E, "req %lx (op: %d) failed at offset %llu\n",

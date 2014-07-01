@@ -45,6 +45,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <sched.h>
+#include <string.h>
 #ifdef MT
 #include <pthread.h>
 #endif

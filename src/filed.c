@@ -1612,8 +1612,8 @@ int dispatch(struct peerd *peer, struct peer_req *pr, struct xseg_request *req,
     pr->peer_trace = malloc(sizeof(struct blkin_trace));                    
     struct blkin_annotation annotation;                                     
     blkin_init_child_info(pr->peer_trace,                                   
-            (struct blkin_trace_info *) &req->req_trace, "filed service");  
-    BLKIN_TIMESTAMP(pr->peer_trace, &annotation,                            
+            (struct blkin_trace_info *) &req->req_trace, peer->peer_endpoint, "filed service");  
+    BLKIN_TIMESTAMP(pr->peer_trace,                            
             peer->peer_endpoint, "accept");
 	switch (req->op) {
 		case X_READ:
@@ -1636,7 +1636,7 @@ int dispatch(struct peerd *peer, struct peer_req *pr, struct xseg_request *req,
 		default:
 			handle_unknown(peer, pr);
 	}
-    BLKIN_TIMESTAMP(pr->peer_trace, &annotation,                            
+    BLKIN_TIMESTAMP(pr->peer_trace,                          
             peer->peer_endpoint, "send");
     return 0;
 }
