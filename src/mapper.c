@@ -1201,9 +1201,12 @@ void * handle_info(struct peer_req *pr)
 {
 	struct peerd *peer = pr->peer;
 	char *target = xseg_get_target(peer->xseg, pr->req);
-	int r = map_action(do_info, pr, target, pr->req->targetlen,
-				MF_ARCHIP|MF_LOAD);
-	if (r < 0)
+    int r = map_action(do_info, pr, target, pr->req->targetlen,
+            MF_ARCHIP|MF_LOAD);
+    struct blkin_annotation annotation;                                     
+    BLKIN_TIMESTAMP(pr->peer_trace, &annotation, peer->peer_endpoint,       
+            "mapper complete");
+    if (r < 0)
 		fail(peer, pr);
 	else
 		complete(peer, pr);
@@ -1214,6 +1217,7 @@ void * handle_info(struct peer_req *pr)
 void * handle_clone(struct peer_req *pr)
 {
 	int r;
+    struct blkin_annotation annotation;                                     
 	struct peerd *peer = pr->peer;
 	//struct mapperd *mapper = __get_mapperd(peer);
 	struct xseg_request_clone *xclone;
@@ -1316,6 +1320,8 @@ void * handle_clone(struct peer_req *pr)
 		put_map(map);
 	}
 out:
+    BLKIN_TIMESTAMP(pr->peer_trace, &annotation, peer->peer_endpoint,       
+            "mapper complete");
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1330,6 +1336,9 @@ void * handle_mapr(struct peer_req *pr)
 	char *target = xseg_get_target(peer->xseg, pr->req);
 	int r = map_action(do_mapr, pr, target, pr->req->targetlen,
 				MF_ARCHIP|MF_LOAD|MF_EXCLUSIVE);
+    struct blkin_annotation annotation;                                     
+    BLKIN_TIMESTAMP(pr->peer_trace, &annotation, peer->peer_endpoint,       
+            "mapper complete");
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1344,6 +1353,9 @@ void * handle_mapw(struct peer_req *pr)
 	char *target = xseg_get_target(peer->xseg, pr->req);
 	int r = map_action(do_mapw, pr, target, pr->req->targetlen,
 				MF_ARCHIP|MF_LOAD|MF_EXCLUSIVE|MF_FORCE);
+    struct blkin_annotation annotation;                                     
+    BLKIN_TIMESTAMP(pr->peer_trace, &annotation, peer->peer_endpoint,       
+            "mapper complete");
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1362,6 +1374,9 @@ void * handle_destroy(struct peer_req *pr)
 	 */
 	int r = map_action(do_destroy, pr, target, pr->req->targetlen,
 				MF_ARCHIP|MF_LOAD|MF_EXCLUSIVE);
+    struct blkin_annotation annotation;                                     
+    BLKIN_TIMESTAMP(pr->peer_trace, &annotation, peer->peer_endpoint,       
+            "mapper complete");
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1377,6 +1392,9 @@ void * handle_open(struct peer_req *pr)
 	//here we do not want to load
 	int r = map_action(do_open, pr, target, pr->req->targetlen,
 				MF_ARCHIP|MF_LOAD|MF_EXCLUSIVE);
+    struct blkin_annotation annotation;                                     
+    BLKIN_TIMESTAMP(pr->peer_trace, &annotation, peer->peer_endpoint,       
+            "mapper complete");
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1392,6 +1410,9 @@ void * handle_close(struct peer_req *pr)
 	//here we do not want to load
 	int r = map_action(do_close, pr, target, pr->req->targetlen,
 				MF_ARCHIP|MF_EXCLUSIVE|MF_FORCE);
+    struct blkin_annotation annotation;                                     
+    BLKIN_TIMESTAMP(pr->peer_trace, &annotation, peer->peer_endpoint,       
+            "mapper complete");
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1409,6 +1430,9 @@ void * handle_snapshot(struct peer_req *pr)
 	 */
 	int r = map_action(do_snapshot, pr, target, pr->req->targetlen,
 				MF_ARCHIP|MF_LOAD|MF_EXCLUSIVE);
+    struct blkin_annotation annotation;                                     
+    BLKIN_TIMESTAMP(pr->peer_trace, &annotation, peer->peer_endpoint,       
+            "mapper complete");
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1426,6 +1450,9 @@ void * handle_hash(struct peer_req *pr)
 	 */
 	int r = map_action(do_hash, pr, target, pr->req->targetlen,
 				MF_ARCHIP|MF_LOAD);
+    struct blkin_annotation annotation;                                     
+    BLKIN_TIMESTAMP(pr->peer_trace, &annotation, peer->peer_endpoint,       
+            "mapper complete");
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1440,8 +1467,15 @@ int dispatch_accepted(struct peerd *peer, struct peer_req *pr,
 	//struct mapperd *mapper = __get_mapperd(peer);
 	struct mapper_io *mio = __get_mapper_io(pr);
 	void *(*action)(struct peer_req *) = NULL;
-
-	//mio->state = ACCEPTED;
+    /*Get trace info from request, create child and annotate*/              
+    pr->peer_trace = malloc(sizeof(struct blkin_trace));                    
+    struct blkin_annotation annotation;                                     
+    blkin_init_child_info(pr->peer_trace,                                   
+        (struct blkin_trace_info *) &req->req_trace, "mapper service"); 
+    BLKIN_TIMESTAMP(pr->peer_trace, &annotation,                            
+     peer->peer_endpoint, "accept");
+	
+    //mio->state = ACCEPTED;
 	mio->err = 0;
 	mio->cb = NULL;
 	cur_count++;
@@ -1560,7 +1594,11 @@ int custom_peer_init(struct peerd *peer, int argc, char *argv[])
 	req_cond = st_cond_new();
 
 //	test_map(peer);
-
+//Create peer endpoint
+    peer->peer_endpoint = malloc(sizeof(struct blkin_endpoint));
+    blkin_init_endpoint(peer->peer_endpoint, "0.0.0.1", peer->portno_start,
+            "mapper");
+    srand(getpid());
 	return 0;
 }
 

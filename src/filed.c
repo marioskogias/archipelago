@@ -1609,7 +1609,12 @@ int dispatch(struct peerd *peer, struct peer_req *pr, struct xseg_request *req,
 	struct fio *fio = __get_fio(pr);
 	if (reason == dispatch_accept)
 		fio->h = NoEntry;
-
+    pr->peer_trace = malloc(sizeof(struct blkin_trace));                    
+    struct blkin_annotation annotation;                                     
+    blkin_init_child_info(pr->peer_trace,                                   
+            (struct blkin_trace_info *) &req->req_trace, "filed service");  
+    BLKIN_TIMESTAMP(pr->peer_trace, &annotation,                            
+            peer->peer_endpoint, "accept");
 	switch (req->op) {
 		case X_READ:
 			handle_read(peer, pr); break;
@@ -1631,7 +1636,9 @@ int dispatch(struct peerd *peer, struct peer_req *pr, struct xseg_request *req,
 		default:
 			handle_unknown(peer, pr);
 	}
-	return 0;
+    BLKIN_TIMESTAMP(pr->peer_trace, &annotation,                            
+            peer->peer_endpoint, "send");
+    return 0;
 }
 
 int custom_peer_init(struct peerd *peer, int argc, char *argv[])
@@ -1717,12 +1724,16 @@ int custom_peer_init(struct peerd *peer, int argc, char *argv[])
 		return -1;
 	//check max fds. (> fdcache + nr_threads)
 	//TODO assert fdcache > 2*nr_threads or add waitq
-	if (rlim.rlim_cur < pfiled->cache.size + peer->nr_threads - 4) {
-		XSEGLOG2(&lc, E, "FD limit %d is less than cachesize + nr_ops -4(%u)",
-				rlim.rlim_cur, pfiled->cache.size + peer->nr_ops - 4);
-		return -1;
-	}
-
+    if (rlim.rlim_cur < pfiled->cache.size + peer->nr_threads - 4) {
+        XSEGLOG2(&lc, E, "FD limit %d is less than cachesize + nr_ops -4(%u)",
+                rlim.rlim_cur, pfiled->cache.size + peer->nr_ops - 4);
+        return -1;
+    }
+    //Create peer endpoint                                                  
+    peer->peer_endpoint = malloc(sizeof(struct blkin_endpoint));            
+    blkin_init_endpoint(peer->peer_endpoint, "0.0.0.1", peer->portno_start, 
+            "filed");                                                       
+    srand(getpid());
 out:
 	return ret;
 }

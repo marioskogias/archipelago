@@ -272,8 +272,15 @@ static int do_accepted_pr(struct peerd *peer, struct peer_req *pr)
 	char *target, *mtarget;
 	void *dummy;
 
-	struct volume_info *vi;
-
+    struct volume_info *vi;
+    
+    //Get trace info from request and create child                          
+    pr->peer_trace = malloc(sizeof(struct blkin_trace));                    
+    struct blkin_annotation annotation;                                     
+    blkin_init_child_info(pr->peer_trace,                                   
+            (struct blkin_trace_info *) &pr->req->req_trace, "vlmc service");
+    BLKIN_TIMESTAMP(pr->peer_trace, &annotation,                            
+            peer->peer_endpoint, "accept");                                 
 	XSEGLOG2(&lc, I, "Do accepted pr started for pr %lx", pr);
 	target = xseg_get_target(peer->xseg, pr->req);
 	if (!target){
@@ -366,7 +373,16 @@ static int do_accepted_pr(struct peerd *peer, struct peer_req *pr)
 	}
 	xseg_set_req_data(peer->xseg, vio->mreq, pr);
 	__set_vio_state(vio, MAPPING);
-	p = xseg_submit(peer->xseg, vio->mreq, pr->portno, X_ALLOC);
+
+    /*Annotate communication with mapper*/                                  
+    BLKIN_TIMESTAMP(pr->peer_trace, &annotation,                            
+            peer->peer_endpoint, "send to mapper");                         
+
+    /*Set trace info to request*/                                           
+    blkin_set_trace_info(pr->peer_trace,                                    
+            (struct blkin_trace_info *) &vio->mreq->req_trace);
+
+    p = xseg_submit(peer->xseg, vio->mreq, pr->portno, X_ALLOC);
 	if (p == NoPort)
 		goto out_unset;
 	r = xseg_signal(peer->xseg, p);
@@ -642,14 +658,18 @@ static int mapping_readwrite(struct peerd *peer, struct peer_req *pr)
 		conclude_pr(peer, pr);
 		return -1;
 	}
-
-	pos = 0;
+    
+    struct blkin_annotation annotation;
+	
+    pos = 0;
 	__set_vio_state(vio, SERVING);
 	for (i = 0; i < vio->breq_len; i++) {
-		datalen = mreply->segs[i].size;
-		offset = mreply->segs[i].offset;
-		targetlen = mreply->segs[i].targetlen;
-		breq = xseg_get_request(peer->xseg, pr->portno, vlmc->bportno, X_ALLOC);
+        BLKIN_TIMESTAMP(pr->peer_trace, &annotation, peer->peer_endpoint,
+                "send to blocker");
+        datalen = mreply->segs[i].size;
+        offset = mreply->segs[i].offset;
+        targetlen = mreply->segs[i].targetlen;
+        breq = xseg_get_request(peer->xseg, pr->portno, vlmc->bportno, X_ALLOC);
 		if (!breq) {
 			vio->err = 1;
 			break;
@@ -660,6 +680,11 @@ static int mapping_readwrite(struct peerd *peer, struct peer_req *pr)
 			xseg_put_request(peer->xseg, breq, pr->portno);
 			break;
 		}
+        /*
+         * Set trace fields to request
+         */
+        blkin_set_trace_info(pr->peer_trace, 
+                (struct blkin_trace_info *) &breq->req_trace);
 		breq->offset = offset;
 		breq->size = datalen;
 		breq->op = pr->req->op;
@@ -719,7 +744,12 @@ static int handle_mapping(struct peerd *peer, struct peer_req *pr,
 				vio->state, (unsigned long)vio->breqs[0]);
 		return -1;
 	}
-
+    struct blkin_trace trace = {.name = "bench"};                           
+    blkin_get_trace_info(&trace,                                            
+            (struct blkin_trace_info *) &req->req_trace);                   
+    struct blkin_annotation annotation;                                         
+    BLKIN_TIMESTAMP(&trace, &annotation, peer->peer_endpoint,               
+            "receive from mapper");
 	switch (vio->mreq->op){
 		case X_INFO:
 			mapping_info(peer, pr);
@@ -754,7 +784,13 @@ static int handle_serving(struct peerd *peer, struct peer_req *pr,
 	struct vlmcd *vlmc = __get_vlmcd(peer);
 	(void)vlmc;
 	struct xseg_request *breq = req;
-
+    /*Receive trace info from xseg request and annotate*/                   
+    struct blkin_trace trace = {.name = "bench"};                           
+    blkin_get_trace_info(&trace,                                            
+            (struct blkin_trace_info *) &req->req_trace);                   
+    struct blkin_annotation annotation;                                         
+    BLKIN_TIMESTAMP(&trace, &annotation, peer->peer_endpoint,               
+            "receive from blocker");
 	if (breq->state & XS_FAILED && !(breq->state & XS_SERVED)) {
 		XSEGLOG2(&lc, E, "req %lx (op: %d) failed at offset %llu\n",
 				(unsigned long)req, req->op,
@@ -865,9 +901,15 @@ int custom_peer_init(struct peerd *peer, int argc, char *argv[])
 	}
 
 
-	const struct sched_param param = { .sched_priority = 99 };
-	sched_setscheduler(syscall(SYS_gettid), SCHED_FIFO, &param);
+    const struct sched_param param = { .sched_priority = 99 };
+    sched_setscheduler(syscall(SYS_gettid), SCHED_FIFO, &param);
 
+    //Create peer endpoint                                                  
+    peer->peer_endpoint = malloc(sizeof(struct blkin_endpoint));            
+    blkin_init_endpoint(peer->peer_endpoint, "0.0.0.1", peer->portno_start, 
+            "vlmc");                                                        
+    srand(getpid());
+             
 	return 0;
 }
 

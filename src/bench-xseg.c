@@ -627,7 +627,11 @@ reseed:
 	else
 		XSEGLOG2(&lc, I, "Seed is %u, object name is %s",
 				obv->seed, obv->name);
-
+    /* initialize endpoint */
+    peer->peer_endpoint = malloc(sizeof(struct blkin_endpoint));
+    blkin_init_endpoint(peer->peer_endpoint, "0.0.0.0", peer->portno_start,
+        "bench");
+    srand(getpid());
 	return 0;
 
 arg_fail:
@@ -748,11 +752,23 @@ static int send_request(struct peerd *peer, struct bench *prefs)
 	//Submit the request from the source port to the target port
 	XSEGLOG2(&lc, D, "Submit request %lu\n", new);
 	timer_start(prefs, prefs->sub_tm);
-	p = xseg_submit(xseg, req, srcport, X_ALLOC);
-	if (p == NoPort) {
-		XSEGLOG2(&lc, W, "Cannot submit request\n");
-		goto put_peer_request;
-	}
+    p = xseg_submit(xseg, req, srcport, X_ALLOC);
+    /*
+     * Create a new trace to associate with the request and annotate
+     */
+    struct blkin_trace trace;
+    blkin_init_new_trace(&trace, "bench service", peer->peer_endpoint);
+    struct blkin_annotation annotation;
+    BLKIN_TIMESTAMP(&trace, &annotation, NULL, "send");
+
+    // set trace info on request
+    blkin_set_trace_info(&trace, (struct blkin_trace_info *)&req->req_trace);
+
+    p = xseg_submit(xseg, req, srcport, X_ALLOC);
+    if (p == NoPort) {
+        XSEGLOG2(&lc, W, "Cannot submit request\n");
+        goto put_peer_request;
+    }
 	prefs->status->submitted++;
 	timer_stop(prefs, prefs->sub_tm, NULL);
 
@@ -994,7 +1010,14 @@ static void handle_received(struct peerd *peer, struct peer_req *pr)
 		prefs->status->failed++;
 	else if (CAN_VERIFY(prefs) && read_chunk(prefs, pr->req))
 		prefs->status->corrupted++;
-
+    /*
+     * Get trace_info from xseg_req and annotate
+     */
+    struct blkin_trace trace = {.name = "bench service"};
+    blkin_get_trace_info(&trace,
+            (struct blkin_trace_info *) &pr->req->req_trace);
+    struct blkin_annotation annotation;
+    BLKIN_TIMESTAMP(&trace, &annotation, peer->peer_endpoint, "receive");
 out:
 	if (xseg_put_request(peer->xseg, pr->req, pr->portno))
 		XSEGLOG2(&lc, W, "Cannot put xseg request\n");
