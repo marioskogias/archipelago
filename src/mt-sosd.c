@@ -127,8 +127,8 @@ static int do_aio_generic(struct peerd *peer, struct peer_req *pr, uint32_t op,
 			r = rados_aio_create_completion(pr, rados_ack_cb, NULL, &rados_compl);
 			if (r < 0)
 				return -1;
-			r = rados_aio_read(rados->ioctx, target, rados_compl,
-					buf, size, offset);
+			r = rados_aio_read_traced(rados->ioctx, target, rados_compl,
+					buf, size, offset, pr->peer_trace);
 			break;
 		case X_WRITE:
 			r = rados_aio_create_completion(pr, NULL, rados_commit_cb, &rados_compl);
@@ -1000,6 +1000,11 @@ int custom_peer_init(struct peerd *peer, int argc, char *argv[])
 		pthread_mutex_init(&rio->m, NULL);
 		peer->peer_reqs[i].priv = (void *) rio;
 	}
+        blkin_init();
+        //Create peer endpoint                                                  
+        peer->peer_endpoint = malloc(sizeof(struct blkin_endpoint));            
+        blkin_init_endpoint(peer->peer_endpoint, "0.0.0.1", peer->portno_start, 
+              "sosd");                                                       
 	return 0;
 }
 
@@ -1021,7 +1026,12 @@ int dispatch(struct peerd *peer, struct peer_req *pr, struct xseg_request *req,
 	char *target = xseg_get_target(peer->xseg, pr->req);
 	unsigned int end = (pr->req->targetlen > MAX_OBJ_NAME) ?
 		MAX_OBJ_NAME : pr->req->targetlen;
-
+        pr->peer_trace = malloc(sizeof(struct blkin_trace));                    
+        struct blkin_annotation annotation;                                     
+        blkin_init_child_info(pr->peer_trace,                                   
+            (struct blkin_trace_info *) &req->req_trace, peer->peer_endpoint, "sosd service");  
+        BLKIN_TIMESTAMP(pr->peer_trace,                            
+            peer->peer_endpoint, "accept");
 	if (reason == dispatch_accept) {
 		strncpy(rio->obj_name, target, end);
 		rio->obj_name[end] = 0;
@@ -1062,5 +1072,9 @@ int dispatch(struct peerd *peer, struct peer_req *pr, struct xseg_request *req,
 		default:
 			fail(peer, pr);
 	}
+    BLKIN_TIMESTAMP(pr->peer_trace,                          
+            peer->peer_endpoint, "send");
+    BLKIN_TIMESTAMP(pr->peer_trace,                          
+            peer->peer_endpoint, "Span ended");
 	return 0;
 }
