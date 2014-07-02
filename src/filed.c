@@ -1581,7 +1581,11 @@ int dispatch(struct peerd *peer, struct peer_req *pr, struct xseg_request *req,
 	struct fio *fio = __get_fio(pr);
 	if (reason == dispatch_accept)
 		fio->h = NoEntry;
-
+    pr->peer_trace = malloc(sizeof(struct blkin_trace));                    
+    blkin_init_child_info(pr->peer_trace, 
+        (struct blkin_trace_info *) &req->req_trace, peer->peer_endpoint, 
+        "filed service");  
+    BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "accept");
 	switch (req->op) {
 		case X_READ:
 			handle_read(peer, pr); break;
@@ -1603,7 +1607,10 @@ int dispatch(struct peerd *peer, struct peer_req *pr, struct xseg_request *req,
 		default:
 			handle_unknown(peer, pr);
 	}
-	return 0;
+    BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "send");
+    BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "Span ended");
+	free(pr->peer_trace);
+    return 0;
 }
 
 int custom_peer_init(struct peerd *peer, int argc, char *argv[])
@@ -1694,7 +1701,11 @@ int custom_peer_init(struct peerd *peer, int argc, char *argv[])
 				rlim.rlim_cur, pfiled->cache.size + peer->nr_ops - 4);
 		return -1;
 	}
-
+    blkin_init();
+    //Create peer endpoint                                                  
+    peer->peer_endpoint = malloc(sizeof(struct blkin_endpoint));            
+    blkin_init_endpoint(peer->peer_endpoint, "0.0.0.1", peer->portno_start, 
+            "filed");              
 out:
 	return ret;
 }

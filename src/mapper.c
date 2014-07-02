@@ -1452,7 +1452,9 @@ void * handle_info(struct peer_req *pr)
 	char *target = xseg_get_target(peer->xseg, pr->req);
 	int r = map_action(do_info, pr, target, pr->req->targetlen,
 				MF_ARCHIP|MF_LOAD);
-	if (r < 0)
+    BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "Span ended");	
+    free(pr->peer_trace);
+    if (r < 0)
 		fail(peer, pr);
 	else
 		complete(peer, pr);
@@ -1561,6 +1563,8 @@ void * handle_clone(struct peer_req *pr)
 		close_map(pr, map);
 		put_map(map);
 	}
+    BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "Span ended");	
+    free(pr->peer_trace);
 out:
 	if (r < 0)
 		fail(peer, pr);
@@ -1704,6 +1708,8 @@ void * handle_create(struct peer_req *pr)
 	r = 0;
 	close_map(pr, map);
 	put_map(map);
+    BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "Span ended");	
+    free(pr->peer_trace);
 out:
 	if (r < 0)
 		fail(peer, pr);
@@ -1719,6 +1725,8 @@ void * handle_mapr(struct peer_req *pr)
 	char *target = xseg_get_target(peer->xseg, pr->req);
 	int r = map_action(do_mapr, pr, target, pr->req->targetlen,
 				MF_ARCHIP|MF_LOAD|MF_EXCLUSIVE);
+    BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "Span ended");	
+    free(pr->peer_trace);
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1733,6 +1741,8 @@ void * handle_mapw(struct peer_req *pr)
 	char *target = xseg_get_target(peer->xseg, pr->req);
 	int r = map_action(do_mapw, pr, target, pr->req->targetlen,
 				MF_ARCHIP|MF_LOAD|MF_EXCLUSIVE|MF_FORCE);
+    BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "Span ended");	
+    free(pr->peer_trace);
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1751,6 +1761,8 @@ void * handle_destroy(struct peer_req *pr)
 	 */
 	int r = map_action(do_destroy, pr, target, pr->req->targetlen,
 				MF_ARCHIP|MF_LOAD|MF_EXCLUSIVE);
+    BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "Span ended");	
+    free(pr->peer_trace);
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1765,6 +1777,8 @@ void * handle_open(struct peer_req *pr)
 	char *target = xseg_get_target(peer->xseg, pr->req);
 	int r = map_action(do_open, pr, target, pr->req->targetlen,
 				MF_ARCHIP|MF_LOAD|MF_EXCLUSIVE);
+    BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "Span ended");	
+    free(pr->peer_trace);
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1780,6 +1794,8 @@ void * handle_close(struct peer_req *pr)
 	//here we do not want to load
 	int r = map_action(do_close, pr, target, pr->req->targetlen,
 				MF_ARCHIP|MF_EXCLUSIVE|MF_FORCE);
+    BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "Span ended");	
+    free(pr->peer_trace);
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1797,6 +1813,8 @@ void * handle_snapshot(struct peer_req *pr)
 	 */
 	int r = map_action(do_snapshot, pr, target, pr->req->targetlen,
 				MF_ARCHIP|MF_LOAD|MF_EXCLUSIVE);
+    BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "Span ended");	
+    free(pr->peer_trace);
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1814,6 +1832,8 @@ void * handle_rename(struct peer_req *pr)
 	 */
 	int r = map_action(do_rename, pr, target, pr->req->targetlen,
 				MF_ARCHIP|MF_LOAD|MF_EXCLUSIVE);
+    BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "Span ended");	
+    free(pr->peer_trace);
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1831,6 +1851,8 @@ void * handle_hash(struct peer_req *pr)
 	 */
 	int r = map_action(do_hash, pr, target, pr->req->targetlen,
 				MF_ARCHIP|MF_LOAD);
+    BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "Span ended");	
+    free(pr->peer_trace);
 	if (r < 0)
 		fail(peer, pr);
 	else
@@ -1860,7 +1882,12 @@ int dispatch_accepted(struct peerd *peer, struct peer_req *pr,
 	//struct mapperd *mapper = __get_mapperd(peer);
 	struct mapper_io *mio = __get_mapper_io(pr);
 	void *(*action)(struct peer_req *) = NULL;
-
+    /*Get trace info from request, create child and annotate*/              
+    pr->peer_trace = malloc(sizeof(struct blkin_trace));                    
+    blkin_init_child_info(pr->peer_trace, 
+        (struct blkin_trace_info *) &req->req_trace, peer->peer_endpoint, 
+        "mapper service"); 
+    BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "accept");
 	//mio->state = ACCEPTED;
 	mio->err = 0;
 	mio->cb = NULL;
@@ -1981,7 +2008,10 @@ int custom_peer_init(struct peerd *peer, int argc, char *argv[])
 	xseg_set_freequeue_size(peer->xseg, peer->portno_start, 3000, 0);
 
 	req_cond = st_cond_new();
-
+    blkin_init();
+    peer->peer_endpoint = malloc(sizeof(struct blkin_endpoint));
+    blkin_init_endpoint(peer->peer_endpoint, "0.0.0.1", peer->portno_start,
+            "mapper");
 //	test_map(peer);
 
 	return 0;

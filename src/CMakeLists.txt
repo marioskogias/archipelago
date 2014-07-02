@@ -29,7 +29,7 @@ set_target_properties(archip-dummy
 
 set(RADOS_SRC mt-sosd.c peer.c hash.c)
 add_executable(archip-radosd ${RADOS_SRC})
-target_link_libraries(archip-radosd xseg pthread rados crypto)
+target_link_libraries(archip-radosd xseg pthread rados crypto blkin-front)
 set_target_properties(archip-radosd
 	PROPERTIES
 	COMPILE_DEFINITIONS "MT"
@@ -38,10 +38,10 @@ set_target_properties(archip-radosd
 set(BENCH_SRC bench-xseg.c peer.c bench-lfsr.c bench-timer.c bench-utils.c
 	bench-report.c bench-verify.c)
 add_executable(archip-bench ${BENCH_SRC})
-target_link_libraries(archip-bench xseg pthread m)
+target_link_libraries(archip-bench xseg pthread m blkin-front)
 
 add_executable(archip-benchfd ${BENCH_SRC})
-target_link_libraries(archip-benchfd xseg pthread m)
+target_link_libraries(archip-benchfd xseg pthread m blkin-front)
 set_target_properties(archip-benchfd
 	PROPERTIES
 	COMPILE_DEFINITIONS "FD"
@@ -50,7 +50,7 @@ set_target_properties(archip-benchfd
 
 set(FILED_SRC filed.c peer.c hash.c)
 add_executable(archip-filed ${FILED_SRC})
-target_link_libraries(archip-filed xseg pthread crypto)
+target_link_libraries(archip-filed xseg pthread crypto blkin-front)
 set_target_properties(archip-filed
 	PROPERTIES
 	COMPILE_DEFINITIONS "MT"
@@ -58,12 +58,12 @@ set_target_properties(archip-filed
 
 set(VLMCD_SRC mt-vlmcd.c peer.c)
 add_executable(archip-vlmcd ${VLMCD_SRC})
-target_link_libraries(archip-vlmcd xseg)
+target_link_libraries(archip-vlmcd xseg blkin-front)
 
 set(MAPPERD_SRC mapper.c peer.c hash.c mapper-handling.c 
 	mapper-version0.c mapper-version1.c mapper-version2.c)
 add_executable(archip-mapperd ${MAPPERD_SRC})
-target_link_libraries(archip-mapperd xseg st crypto)
+target_link_libraries(archip-mapperd xseg st crypto blkin-front)
 set_target_properties(archip-mapperd
 	PROPERTIES
 	COMPILE_DEFINITIONS "ST_THREADS"

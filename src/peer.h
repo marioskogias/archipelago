@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stddef.h>
 #include <xseg/xseg.h>
 #include <string.h>
+#include <blkin-front.h>
 
 #ifdef ST_THREADS
 #include <st.h>
@@ -68,6 +69,7 @@ struct peer_req {
 	ssize_t retval;
 	xport portno;
 	void *priv;
+    struct blkin_trace *peer_trace;
 #ifdef ST_THREADS
 	st_cond_t cond;
 #endif
@@ -97,6 +99,7 @@ struct peerd {
 	int (*peerd_loop)(void *arg);
 	void *sd;
 	void *priv;
+    struct blkin_endpoint *peer_endpoint;
 #ifdef MT
 	uint32_t nr_threads;
 	struct thread *thread;
