@@ -1015,32 +1015,32 @@ int dispatch(struct peerd *peer, struct peer_req *pr, struct xseg_request *req,
 	char *target = xseg_get_target(peer->xseg, pr->req);
 	unsigned int end = (pr->req->targetlen > MAX_OBJ_NAME) ?
 		MAX_OBJ_NAME : pr->req->targetlen;
-	if (reason == dispatch_accept) {
-		strncpy(rio->obj_name, target, end);
-		rio->obj_name[end] = 0;
-		rio->state = ACCEPTED;
-		rio->read = 0;
-	}
+    if (reason == dispatch_accept) {
+        strncpy(rio->obj_name, target, end);
+        rio->obj_name[end] = 0;
+        rio->state = ACCEPTED;
+        rio->read = 0;
+        pr->peer_trace = malloc(sizeof(struct blkin_trace));                        
+        blkin_init_child_info(pr->peer_trace,                                       
+                (struct blkin_trace_info *) &req->req_trace, peer->peer_endpoint,       
+                "radosd service");                                                        
+    }
 
 	switch (pr->req->op){
-		case X_READ:
-			pr->peer_trace = malloc(sizeof(struct blkin_trace));                        
-			blkin_init_child_info(pr->peer_trace,                                       
-					(struct blkin_trace_info *) &req->req_trace, peer->peer_endpoint,       
-					"radosd service");                                                        
-			BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "accept for reading");
-			handle_read(peer, pr);
-			BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "sent to rados");  
-			break;
+        case X_READ:
+            if (reason == dispatch_accept) 
+                BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "accept for reading");
+            handle_read(peer, pr);
+            if (reason == dispatch_accept) 
+                BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "sent to rados");  
+            break;
 		case X_WRITE:
-			pr->peer_trace = malloc(sizeof(struct blkin_trace));                        
-			blkin_init_child_info(pr->peer_trace,                                       
-					(struct blkin_trace_info *) &req->req_trace, peer->peer_endpoint,       
-					"radosd service");                                                        
-			BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "accept for writing");
-			handle_write(peer, pr); 
-			BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "sent to rados");  
-			break;
+            if (reason == dispatch_accept) 
+                BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "accept for writing");
+            handle_write(peer, pr); 
+            if (reason == dispatch_accept) 
+                BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint, "sent to rados");  
+            break;
 		case X_DELETE:
 			if (canDefer(peer))
 				defer_request(peer, pr);

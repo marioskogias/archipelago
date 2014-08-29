@@ -377,14 +377,15 @@ static int do_accepted_pr(struct peerd *peer, struct peer_req *pr)
 	}
 	xseg_set_req_data(peer->xseg, vio->mreq, pr);
 	__set_vio_state(vio, MAPPING);
-    /*Annotate communication with mapper*/                                  
-    BLKIN_TIMESTAMP(pr->peer_trace,                            
-            peer->peer_endpoint, "send to mapper");                         
+    if ((pr->req->op == X_WRITE) || (pr->req->op == X_READ)) {
+        /*Annotate communication with mapper*/                                  
+        BLKIN_TIMESTAMP(pr->peer_trace,                            
+                peer->peer_endpoint, "send to mapper");                         
 
-    /*Set trace info to request*/                                           
-    blkin_get_trace_info(pr->peer_trace,                                    
-            (struct blkin_trace_info *) &vio->mreq->req_trace);
-
+        /*Set trace info to request*/                                           
+        blkin_get_trace_info(pr->peer_trace,                                    
+                (struct blkin_trace_info *) &vio->mreq->req_trace);
+    }
 	p = xseg_submit(peer->xseg, vio->mreq, pr->portno, X_ALLOC);
 	if (p == NoPort)
 		goto out_unset;
@@ -701,8 +702,6 @@ static int mapping_readwrite(struct peerd *peer, struct peer_req *pr)
 	vio->breq_cnt = 0;
 	for (i = 0; i < vio->breq_len; i++) {
 		datalen = mreply->segs[i].size;
-        BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint,
-                "send to blocker");
 		if (mreply->segs[i].flags & XF_MAPFLAG_ZERO) {
 			vio->breqs[i] = NULL;
 			if (pr->req->op != X_READ) {
@@ -751,12 +750,17 @@ static int mapping_readwrite(struct peerd *peer, struct peer_req *pr)
 		// this should work, right ?
 		breq->data = pr->req->data + pos;
 		pos += datalen;
-        /*
-         * Set trace fields to request
-         */
-        blkin_get_trace_info(pr->peer_trace, 
-                (struct blkin_trace_info *) &breq->req_trace);
-		p = xseg_submit(peer->xseg, breq, pr->portno, X_ALLOC);
+        
+        if ((breq->op == X_READ) || (breq->op == X_WRITE)) { 
+            BLKIN_TIMESTAMP(pr->peer_trace, peer->peer_endpoint,
+                    "send to blocker");
+            /*
+             * Set trace fields to request
+             */
+            blkin_get_trace_info(pr->peer_trace, 
+                    (struct blkin_trace_info *) &breq->req_trace);
+	    }	
+        p = xseg_submit(peer->xseg, breq, pr->portno, X_ALLOC);
 		if (p == NoPort){
 			void *dummy;
 			vio->err = 1;
@@ -840,21 +844,22 @@ static int handle_serving(struct peerd *peer, struct peer_req *pr,
 	struct xseg_request *breq = req;
 
     /*Receive trace info from xseg request and annotate*/                   
-    struct blkin_trace trace = {.name = "vlmc"};                           
-    blkin_set_trace_info(&trace,                                            
-            (struct blkin_trace_info *) &req->req_trace);                   
-    BLKIN_TIMESTAMP(&trace,  peer->peer_endpoint,               
-            "receive from blocker");
-
-if (breq->state & XS_FAILED && !(breq->state & XS_SERVED)) {
-		XSEGLOG2(&lc, E, "req %lx (op: %d) failed at offset %llu\n",
-				(unsigned long)req, req->op,
-				(unsigned long long)req->offset);
-		vio->err = 1;
-	} else {
-		//assert breq->serviced == breq->size
-		pr->req->serviced += breq->serviced;
-	}
+    if ((pr->req->op == X_READ) || (pr->req->op == X_WRITE)) {
+        struct blkin_trace trace = {.name = "vlmc"};                           
+        blkin_set_trace_info(&trace,                                            
+                (struct blkin_trace_info *) &req->req_trace);                   
+        BLKIN_TIMESTAMP(&trace,  peer->peer_endpoint,               
+                "receive from blocker");
+    }
+    if (breq->state & XS_FAILED && !(breq->state & XS_SERVED)) {
+        XSEGLOG2(&lc, E, "req %lx (op: %d) failed at offset %llu\n",
+                (unsigned long)req, req->op,
+                (unsigned long long)req->offset);
+        vio->err = 1;
+    } else {
+        //assert breq->serviced == breq->size
+        pr->req->serviced += breq->serviced;
+    }
 	xseg_put_request(peer->xseg, breq, pr->portno);
 
 	if (!--vio->breq_cnt){
@@ -864,7 +869,8 @@ if (breq->state & XS_FAILED && !(breq->state & XS_SERVED)) {
 		vio->breq_len = 0;
 		conclude_pr(peer, pr);
 	}
-    BLKIN_TIMESTAMP(&trace,  peer->peer_endpoint, "Span ended");
+    if ((pr->req->op == X_READ) || (pr->req->op == X_WRITE)) {
+        BLKIN_TIMESTAMP(&trace,  peer->peer_endpoint, "Span ended");
 	return 0;
 }
 
